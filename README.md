@@ -1,9 +1,20 @@
-# MarriPath - 結婚協定メーカー
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-結婚前の不安を、「ふたりの自信」に変えるアプリ。
+# Run and deploy your AI Studio app
 
-## 🚀 ローカル実行
+This contains everything you need to run your app locally.
 
-```bash
-npm install
-npm run dev
+View your app in AI Studio: https://ai.studio/apps/4eb34791-73fb-46cd-9428-cf3efccac5dc
+
+## Run Locally
+
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

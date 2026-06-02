@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+
+    // UserAgreement validation
+    function isValidUserAgreement(data) {
+      return data.keys().hasAll(['userId', 'rules', 'createdAt', 'updatedAt']) &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.rules is list && data.rules.size() <= 50 &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             (data.get('userEmail', null) == null || (data.userEmail is string && data.userEmail.size() <= 200)) &&
+             (data.get('nickname', null) == null || (data.nickname is string && data.nickname.size() <= 50)) &&
+             (data.get('shared', null) == null || data.shared is bool);
+    }
+
+    match /agreements/{agreementId} {
+      allow get: if isValidId(agreementId) && (existing().shared == true || isOwner(existing().userId));
+      allow list: if isOwner(resource.data.userId) || resource.data.shared == true;
+      allow create: if isSignedIn() && 
+                      isValidUserAgreement(incoming()) && 
+                      incoming().userId == request.auth.uid &&
+                      incoming().createdAt == request.time &&
+                      incoming().updatedAt == request.time;
+      allow update: if isOwner(existing().userId) && 
+                      isValidUserAgreement(incoming()) &&
+                      incoming().userId == existing().userId &&
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().updatedAt == request.time &&
+                      (
+                        // Action: Update rules or sharing
+                        incoming().diff(existing()).affectedKeys().hasOnly(['rules', 'updatedAt', 'shared'])
+                      );
+      allow delete: if isOwner(existing().userId);
+
+      match /comments/{commentId} {
+        allow read: if isValidId(agreementId) && (get(/databases/$(database)/documents/agreements/$(agreementId)).data.shared == true || isOwner(get(/databases/$(database)/documents/agreements/$(agreementId)).data.userId));
+        allow create: if isSignedIn() && 
+                        incoming().userId == request.auth.uid &&
+                        incoming().content is string && 
+                        incoming().content.size() <= 1000 &&
+                        incoming().createdAt == request.time;
+      }
+    }
+
+    match /profiles/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId) && 
+                     incoming().nickname is string && 
+                     incoming().nickname.size() <= 50 &&
+                     (incoming().get('personalityType', '') is string && incoming().get('personalityType', '').size() <= 100) &&
+                     (incoming().get('values', '') is string && incoming().get('values', '').size() <= 1000);
+    }
+
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && 
+                      incoming().userId == request.auth.uid &&
+                      incoming().nickname is string &&
+                      incoming().nickname.size() <= 50 &&
+                      incoming().content is string &&
+                      incoming().content.size() <= 1000 &&
+                      incoming().createdAt == request.time;
+      allow delete: if isOwner(existing().userId);
+    }
+  }
+}

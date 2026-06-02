@@ -1,0 +1,71 @@
+{
+  "entities": {
+    "UserAgreement": {
+      "title": "User Agreement",
+      "description": "A marriage agreement created by a couple.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who created the agreement." },
+        "userEmail": { "type": "string", "description": "The email of the user who created the agreement." },
+        "nickname": { "type": "string", "description": "The public nickname of the creator." },
+        "rules": {
+          "type": "array",
+          "description": "The list of rules included in the agreement."
+        },
+        "createdAt": { "type": "string", "format": "date-time", "description": "The time the agreement was created." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "The time the agreement was last updated." },
+        "shared": { "type": "boolean", "description": "Whether the agreement is publicly shared." }
+      },
+      "required": ["userId", "rules", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/agreements/{agreementId}": {
+      "schema": "UserAgreement",
+      "description": "Permanent marriage agreements."
+    },
+    "/agreements/{agreementId}/comments/{commentId}": {
+      "schema": {
+        "title": "Comment",
+        "type": "object",
+        "properties": {
+          "userId": { "type": "string" },
+          "userName": { "type": "string" },
+          "userPhoto": { "type": "string" },
+          "content": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "content", "createdAt"]
+      },
+      "description": "Thread comments for an agreement."
+    },
+    "/profiles/{userId}": {
+      "schema": {
+        "title": "UserProfile",
+        "type": "object",
+        "properties": {
+          "nickname": { "type": "string" },
+          "personalityType": { "type": "string" },
+          "values": { "type": "string" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["nickname"]
+      },
+      "description": "User profile information including personality and values."
+    },
+    "/posts/{postId}": {
+      "schema": {
+        "title": "Post",
+        "type": "object",
+        "properties": {
+          "userId": { "type": "string" },
+          "nickname": { "type": "string" },
+          "content": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "nickname", "content", "createdAt"]
+      },
+      "description": "General community posts."
+    }
+  }
+}
